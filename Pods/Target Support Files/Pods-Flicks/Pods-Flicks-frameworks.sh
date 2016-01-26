@@ -53,7 +53,11 @@ code_sign_if_enabled() {
 
 if [[ "$CONFIGURATION" == "Debug" ]]; then
   install_framework 'Pods-Flicks/AFNetworking.framework'
+  install_framework 'Pods-Flicks/MBProgressHUD.framework'
+  install_framework 'Pods-Flicks/SVProgressHUD.framework'
 fi
 if [[ "$CONFIGURATION" == "Release" ]]; then
   install_framework 'Pods-Flicks/AFNetworking.framework'
+  install_framework 'Pods-Flicks/MBProgressHUD.framework'
+  install_framework 'Pods-Flicks/SVProgressHUD.framework'
 fi
