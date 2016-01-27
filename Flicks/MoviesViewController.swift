@@ -10,19 +10,24 @@ import UIKit
 import AFNetworking
 import MBProgressHUD
 
-class MoviesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+class MoviesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
     
     
+    @IBOutlet weak var searchBar: UISearchBar!
+   
    @IBOutlet weak var tableView: UITableView!
+    let refreshControl = UIRefreshControl()
     
     @IBOutlet weak var networkLabel: UILabel!
     var movies: [NSDictionary]?
-    
+    var filteredMovies: [NSDictionary]?
     override func viewDidLoad() {
         super.viewDidLoad()
-        let refreshControl = UIRefreshControl()
         tableView.dataSource = self
         tableView.delegate = self
+        searchBar.delegate = self
+        
+        
         refreshControl.addTarget(self, action: "refreshControlAction:", forControlEvents: UIControlEvents.ValueChanged)
         tableView.insertSubview(refreshControl, atIndex: 0)
         
@@ -44,7 +49,9 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
                         data, options:[]) as? NSDictionary {
                             NSLog("response: \(responseDictionary)")
                             self.movies = responseDictionary["results"] as? [NSDictionary]
+                            self.filteredMovies = self.movies
                             //reloading data
+                            self.refreshControl.endRefreshing()
                             self.tableView.reloadData()
                             self.networkLabel.hidden = true
                     }
@@ -65,15 +72,15 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     
     
     public func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if let movies = movies {
-            return movies.count
+        if let filteredMovies = filteredMovies {
+            return filteredMovies.count
         } else {
             return 0
         }
     }
     public func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier("MoviesCell", forIndexPath: indexPath) as! MovieCell
-        let movie = movies![indexPath.row]
+        let movie = filteredMovies![indexPath.item]
         let title = movie["title"] as! String
         let overview = movie["overview"] as! String
         let baseURl = "https://image.tmdb.org/t/p/w342"
@@ -85,13 +92,13 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         cell.titleLabel.text = title
         cell.overviewLabel.text = overview
         print(indexPath.row)
-        print("success")
+        
         return cell
     }
     public func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
         tableView.deselectRowAtIndexPath(indexPath, animated: true)
         tableView.reloadRowsAtIndexPaths([indexPath], withRowAnimation: .Automatic)
-        
+        print("success")
     }
     
     public func refreshControlAction(refreshControl: UIRefreshControl) {
@@ -112,7 +119,9 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
                         data, options:[]) as? NSDictionary {
                             NSLog("response: \(responseDictionary)")
                             self.movies = responseDictionary["results"] as? [NSDictionary]
+                            self.filteredMovies = self.movies
                             //reloading data
+                            self.refreshControl.endRefreshing()
                             self.tableView.reloadData()
                             self.networkLabel.hidden = true
                     }
@@ -126,6 +135,25 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
                 refreshControl.endRefreshing()
         });
         task.resume()
+    }
+    
+    func searchBar(searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchText.isEmpty {
+            filteredMovies = movies
+        } else {
+            filteredMovies = movies?.filter({ (movie: NSDictionary) -> Bool in
+                if let title = movie["title"] as? String {
+                    if title.rangeOfString(searchText, options: .CaseInsensitiveSearch) != nil {
+                        
+                        return  true
+                    } else {
+                        return false
+                    }
+                }
+                return false
+            })
+        }
+        tableView.reloadData()
     }
     
     /*
